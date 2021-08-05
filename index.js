@@ -118,7 +118,7 @@ app.post("/handlePayment", async function(req, res){
         var id_pjs = payment.id_pjs.stringValue.split("|");
 
         //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
-        id_pjs.forEach(id_pj => {
+        id_pjs.forEach(id_pj => async function(){
             await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
                 status: 1
             }, {merge : true});
@@ -134,6 +134,6 @@ app.post("/handlePayment", async function(req, res){
     }
 });
 
-app.listen(process.env.PORT, function(){
+app.listen(3000, function(){
     console.log(`listening port ${process.env.PORT}...`);
 });
