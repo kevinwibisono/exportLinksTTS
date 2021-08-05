@@ -101,36 +101,33 @@ app.get("/", function(req, res){
 
 app.post("/handlePayment", async function(req, res){
     var id_payment = req.query.id_payment;
-    var str = "a|b";
-    var strSplit = str.split("|");
-    str = "";
-    
-    strSplit.forEach(strSplitEl => {
-        str += strSplitEl+";";
-    });
-
-    //dapatkan document dari id_payment yang diberikan
-    var paymentDoc = await firestore.collection("pembayaran").doc(id_payment).get();
-
-    if(paymentDoc.exists){
-        //jika ada pembayaran dengan id_payment tsb
-        var payment = paymentDoc._delegate._document.data.value.mapValue.fields;
-        var id_pjs = payment.id_pjs.stringValue.split("|");
-
-        //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
-        id_pjs.forEach(id_pj => async function(){
-            await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
-                status: 1
-            }, {merge : true});
-        });
-
-        //setelah itu delete document pembayarannya
-        await firestore.collection("pembayaran").doc(id_payment).delete();
-
-        res.send("berhasil");
+    if(id_payment == undefined || id_payment == ""){
+        res.send("pembayaran tidak ditemukan");
     }
     else{
-        res.send("pembayaran tidak ditemukan");
+        //dapatkan document dari id_payment yang diberikan
+        var paymentDoc = await firestore.collection("pembayaran").doc(id_payment).get();
+
+        if(paymentDoc.exists){
+            //jika ada pembayaran dengan id_payment tsb
+            var payment = paymentDoc._delegate._document.data.value.mapValue.fields;
+            var id_pjs = payment.id_pjs.stringValue.split("|");
+
+            //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
+            id_pjs.forEach(id_pj => async function(){
+                await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
+                    status: 1
+                }, {merge : true});
+            });
+
+            //setelah itu delete document pembayarannya
+            await firestore.collection("pembayaran").doc(id_payment).delete();
+
+            res.send("berhasil");
+        }
+        else{
+            res.send("pembayaran tidak ditemukan");
+        }
     }
 });
 
