@@ -1,6 +1,21 @@
 const express = require('express');
 const fs = require('fs');
 const multer = require('multer');
+
+const firebase = require("firebase");
+const firebaseConfig = {
+    apiKey: "AIzaSyA2GGpgQ1rGDdCFxnpYNoX6zzChPW5Pyok",
+    authDomain: "pawfriends-a5086.firebaseapp.com",
+    databaseURL: "https://pawfriends-a5086-default-rtdb.firebaseio.com",
+    projectId: "pawfriends-a5086",
+    storageBucket: "pawfriends-a5086.appspot.com",
+    messagingSenderId: "416424761091",
+    appId: "1:416424761091:web:67f9882d2f40bc19ad3b36",
+    measurementId: "G-VT1H160HR0"
+};
+const firebaseInstance = firebase.initializeApp(firebaseConfig);
+const firestore = firebaseInstance.firestore();
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -82,6 +97,41 @@ app.post('/getLinksTTS', function(req, res){
 
 app.get("/", function(req, res){
     res.render("home");
+});
+
+app.post("/handlePayment", async function(req, res){
+    var id_payment = req.query.id_payment;
+    var str = "a|b";
+    var strSplit = str.split("|");
+    str = "";
+    
+    strSplit.forEach(strSplitEl => {
+        str += strSplitEl+";";
+    });
+
+    //dapatkan document dari id_payment yang diberikan
+    var paymentDoc = await firestore.collection("pembayaran").doc(id_payment).get();
+
+    if(paymentDoc.exists){
+        //jika ada pembayaran dengan id_payment tsb
+        var payment = paymentDoc._delegate._document.data.value.mapValue.fields;
+        var id_pjs = payment.id_pjs.stringValue.split("|");
+
+        //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
+        id_pjs.forEach(id_pj => {
+            await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
+                status: 1
+            }, {merge : true});
+        });
+
+        //setelah itu delete document pembayarannya
+        await firestore.collection("pembayaran").doc(id_payment).delete();
+
+        res.send("berhasil");
+    }
+    else{
+        res.send("pembayaran tidak ditemukan");
+    }
 });
 
 app.listen(process.env.PORT, function(){
