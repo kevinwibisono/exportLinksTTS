@@ -114,16 +114,20 @@ app.post("/handlePayment", async function(req, res){
             var id_pjs = payment.id_pjs.stringValue.split("|");
 
             //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
-            id_pjs.forEach(id_pj => async function(){
+            for (let index = 0; index < id_pjs.length; index++) {
+                var id_pj = id_pjs[index];
                 await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
                     status: 1
                 }, {merge : true});
-            });
+                console.log(id_pj);
+                if(index == id_pjs.length -1){
+                    res.send("berhasil");
+                }
+            }
 
             //setelah itu delete document pembayarannya
             await firestore.collection("pembayaran").doc(id_payment).delete();
 
-            res.send("berhasil");
         }
         else{
             res.send("pembayaran tidak ditemukan");
