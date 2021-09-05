@@ -160,7 +160,7 @@ app.post("/handlePayment", async function(req, res){
 
 app.get("/sendNotif", function(req, res){
     let message = {
-        data: {
+        notification: {
             title: req.query.judul,
             body: req.query.isi
         },
