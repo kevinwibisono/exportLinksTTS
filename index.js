@@ -170,10 +170,10 @@ app.get("/sendNotif", function(req, res){
     admin.messaging().send(message)
     .then((response) => {
         // Response is a message ID string.
-        res.send({messageId : response, error: ""});
+        res.json({"messageId":response,"error":""});
       })
       .catch((error) => {
-        res.send({messageId : "", error: error});
+        res.json({"messageId":"","error":error});
       });
 
       
