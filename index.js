@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const multer = require('multer');
+const nodeMailer = require('nodemailer');
 
 const firebase = require("firebase");
 const firebaseConfig = {
@@ -15,6 +16,17 @@ const firebaseConfig = {
 };
 const firebaseInstance = firebase.initializeApp(firebaseConfig);
 const firestore = firebaseInstance.firestore();
+
+const admin = require("firebase-admin");
+const serviceAccount = require("./uploads/pawfriends-a5086-firebase-adminsdk-gc5n3-32010c9fc4.json");
+const { response } = require('express');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: "pawfriends-a5086.appspot.com"
+});
+
+const firebaseStorageBucket = admin.storage().bucket();
+
 
 const app = express();
 app.use(express.json());
@@ -95,6 +107,17 @@ app.post('/getLinksTTS', function(req, res){
     
 });
 
+app.post('/trialUpload', function(req, res){
+    upload(req,res, async function (err){
+        firebaseStorageBucket.upload('./uploads/'+req.file.originalname, (err, file) =>{
+            if (err) { return console.error(err); }
+            let publicUrl = `https://firebasestorage.googleapis.com/v0/b/pawfriends-a5086.appspot.com/o/${file.metadata.name}?alt=media`;
+            console.log(publicUrl);
+        });
+    });
+    
+});
+
 app.get("/", function(req, res){
     res.render("home");
 });
@@ -133,6 +156,27 @@ app.post("/handlePayment", async function(req, res){
             res.send("pembayaran tidak ditemukan");
         }
     }
+});
+
+app.get("/sendNotif", function(req, res){
+    let message = {
+        data: {
+            title: req.query.judul,
+            body: req.query.isi
+        },
+        topic: req.query.topik
+    }
+
+    admin.messaging().send(message)
+    .then((response) => {
+        // Response is a message ID string.
+        res.send({messageId : response, error: ""});
+      })
+      .catch((error) => {
+        res.send({messageId : "", error: error});
+      });
+
+      
 });
 
 app.listen(process.env.PORT, function(){
