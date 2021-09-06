@@ -139,6 +139,29 @@ app.post("/handlePayment", async function(req, res){
             //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
             for (let index = 0; index < id_pjs.length; index++) {
                 var id_pj = id_pjs[index];
+
+                var pjDoc = await firestore.collection("pesanan_janjitemu").doc(id_pj).get();
+                var pesananjanjitemu = pjDoc._delegate._document.data.value.mapValue.fields;
+                let messageBuyer = {
+                    notification: {
+                        title: "Pembayaran Telah Terverifikasi",
+                        body: "Pesananmu Telah Diteruskan Ke Penjual"
+                    },
+                    topic: pesananjanjitemu.hp_pembeli
+                }
+
+                let messageSeller = {
+                    notification: {
+                        title: "Ada Pesanan Baru",
+                        body: "kamu Mendapat Pesanan Baru"
+                    },
+                    topic: pesananjanjitemu.hp_penjual
+                }
+            
+                admin.messaging().send(messageBuyer);
+                admin.messaging().send(messageSeller);
+
+
                 await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
                     status: 1
                 }, {merge : true});
