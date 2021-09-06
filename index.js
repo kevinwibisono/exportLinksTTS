@@ -203,6 +203,6 @@ app.get("/sendNotif", function(req, res){
       
 });
 
-app.listen(3000, function(){
+app.listen(process.env.PORT, function(){
     console.log(`listening port ${process.env.PORT}...`);
 });
