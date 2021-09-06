@@ -147,7 +147,7 @@ app.post("/handlePayment", async function(req, res){
                         title: "Pembayaran Telah Terverifikasi",
                         body: "Pesananmu Telah Diteruskan Ke Penjual"
                     },
-                    topic: pesananjanjitemu.hp_pembeli
+                    topic: pesananjanjitemu.hp_pembeli.stringValue
                 }
 
                 let messageSeller = {
@@ -155,10 +155,11 @@ app.post("/handlePayment", async function(req, res){
                         title: "Ada Pesanan Baru",
                         body: "kamu Mendapat Pesanan Baru"
                     },
-                    topic: pesananjanjitemu.hp_penjual
+                    topic: pesananjanjitemu.hp_penjual.stringValue
                 }
             
                 admin.messaging().send(messageBuyer);
+                
                 admin.messaging().send(messageSeller);
 
 
@@ -202,6 +203,6 @@ app.get("/sendNotif", function(req, res){
       
 });
 
-app.listen(process.env.PORT, function(){
+app.listen(3000, function(){
     console.log(`listening port ${process.env.PORT}...`);
 });
