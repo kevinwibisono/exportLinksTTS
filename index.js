@@ -3,30 +3,10 @@ const fs = require('fs');
 const multer = require('multer');
 const nodeMailer = require('nodemailer');
 
-const firebase = require("firebase");
-const firebaseConfig = {
-    apiKey: "AIzaSyA2GGpgQ1rGDdCFxnpYNoX6zzChPW5Pyok",
-    authDomain: "pawfriends-a5086.firebaseapp.com",
-    databaseURL: "https://pawfriends-a5086-default-rtdb.firebaseio.com",
-    projectId: "pawfriends-a5086",
-    storageBucket: "pawfriends-a5086.appspot.com",
-    messagingSenderId: "416424761091",
-    appId: "1:416424761091:web:67f9882d2f40bc19ad3b36",
-    measurementId: "G-VT1H160HR0"
-};
-const firebaseInstance = firebase.initializeApp(firebaseConfig);
-const firestore = firebaseInstance.firestore();
-
-const admin = require("firebase-admin");
-const serviceAccount = require("./uploads/pawfriends-a5086-firebase-adminsdk-gc5n3-32010c9fc4.json");
-const { response } = require('express');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: "pawfriends-a5086.appspot.com"
-});
-
-const firebaseStorageBucket = admin.storage().bucket();
-
+const mailjet = require('node-mailjet').connect(
+    "e70895b637b61e7456a5579991b5ec4d",
+    "8ca3e8366e1b2965a847f47867829241"
+)
 
 const app = express();
 app.use(express.json());
@@ -107,100 +87,28 @@ app.post('/getLinksTTS', function(req, res){
     
 });
 
-app.post('/trialUpload', function(req, res){
-    upload(req,res, async function (err){
-        firebaseStorageBucket.upload('./uploads/'+req.file.originalname, (err, file) =>{
-            if (err) { return console.error(err); }
-            let publicUrl = `https://firebasestorage.googleapis.com/v0/b/pawfriends-a5086.appspot.com/o/${file.metadata.name}?alt=media`;
-            console.log(publicUrl);
-        });
-    });
-    
-});
-
 app.get("/", function(req, res){
     res.render("home");
 });
 
-app.post("/handlePayment", async function(req, res){
-    var id_payment = req.query.id_payment;
-    if(id_payment == undefined || id_payment == ""){
-        res.send("pembayaran tidak ditemukan");
-    }
-    else{
-        //dapatkan document dari id_payment yang diberikan
-        var paymentDoc = await firestore.collection("pembayaran").doc(id_payment).get();
-
-        if(paymentDoc.exists){
-            //jika ada pembayaran dengan id_payment tsb
-            var payment = paymentDoc._delegate._document.data.value.mapValue.fields;
-            var id_pjs = payment.id_pjs.stringValue.split("|");
-
-            //temukan pesanan_janjitemu didalamnya dan update statusnya satu per satu
-            for (let index = 0; index < id_pjs.length; index++) {
-                var id_pj = id_pjs[index];
-
-                var pjDoc = await firestore.collection("pesanan_janjitemu").doc(id_pj).get();
-                var pesananjanjitemu = pjDoc._delegate._document.data.value.mapValue.fields;
-                let messageBuyer = {
-                    notification: {
-                        title: "Pembayaran Telah Terverifikasi",
-                        body: "Pesananmu Telah Diteruskan Ke Penjual"
-                    },
-                    topic: pesananjanjitemu.hp_pembeli.stringValue
-                }
-
-                let messageSeller = {
-                    notification: {
-                        title: "Ada Pesanan Baru",
-                        body: "kamu Mendapat Pesanan Baru"
-                    },
-                    topic: pesananjanjitemu.hp_penjual.stringValue
-                }
-            
-                admin.messaging().send(messageBuyer);
-                
-                admin.messaging().send(messageSeller);
-
-
-                await firestore.collection("pesanan_janjitemu").doc(id_pj).set({
-                    status: 1
-                }, {merge : true});
-                console.log(id_pj);
-                if(index == id_pjs.length -1){
-                    res.send("berhasil");
-                }
-            }
-
-            //setelah itu delete document pembayarannya
-            await firestore.collection("pembayaran").doc(id_payment).delete();
-
-        }
-        else{
-            res.send("pembayaran tidak ditemukan");
-        }
-    }
-});
-
-app.get("/sendNotif", function(req, res){
-    let message = {
-        notification: {
-            title: req.query.judul,
-            body: req.query.isi
-        },
-        topic: req.query.topik
-    }
-
-    admin.messaging().send(message)
-    .then((response) => {
-        // Response is a message ID string.
-        res.json({"messageId":response,"error":""});
+app.post("/verifyEmail", function(req, res){
+    const request = mailjet.post('send').request({
+        FromEmail: 'pawfriendspartners@gmail.com',
+        FromName: 'PawFriends',
+        Subject: 'Verifikasikan Emailmu',
+        'Text-part':
+          'Hai PawFriends, berikut adalah kode verifikasi untuk emailmu',
+        'Html-part':
+          `<h2>Verifikasikan Emailmu</h2><br><br>Hai PawFriends, berikut adalah kode verifikasi untuk emailmu<br><br><h2>${req.query.code}</h2>`,
+        Recipients: [{ Email: req.query.email }],
       })
-      .catch((error) => {
-        res.json({"messageId":"","error":error});
-      });
-
-      
+      request
+        .then(result => {
+          console.log(result.body)
+        })
+        .catch(err => {
+          console.log(err.statusCode)
+        })
 });
 
 app.listen(process.env.PORT, function(){
