@@ -14,7 +14,8 @@ function searchContents(obj){
     if(obj['CustomMesh']){
         var newObj = {
             "Name":obj['Nickname'],
-            "MeshURL":obj['CustomMesh']['MeshURL']
+            "MeshURL":obj['CustomMesh']['MeshURL'],
+            "DiffuseURL":obj['CustomMesh']['DiffuseURL']
         }
         objs.push(newObj);
     }
